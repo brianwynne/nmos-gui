@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ST2110 BCC - Broadcast Control Center</title>
+    <title>NMOS and SAP Stream Manager</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/style.css">
 
@@ -23,18 +23,11 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <img class="logo-icon" src="favicon.svg" alt="NMOS Simple BCC">
-                    <h1>NMOS Simple BCC</h1>
+                    <img class="logo-icon" src="favicon.svg" alt="NMOS and SAP Stream Manager">
+                    <h1>NMOS and SAP Stream Manager</h1>
                 </div>
                 <div class="header-actions">
-                    <button id="connectRdsBtn" class="btn btn-primary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
-                        </svg>
-                        Connect RDS
-                    </button>
-                    <button id="addNodeBtn" class="btn btn-secondary">
+                    <button id="addNodeBtn" class="btn btn-primary">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="16"/>
@@ -60,6 +53,52 @@
                 </div>
             </div>
         </header>
+
+        <!-- Discovery Controls (NMOS RDS + AES67/SAP) -->
+        <div class="discovery-controls">
+            <!-- NMOS RDS Discovery Toggle -->
+            <div class="toggle-container">
+                <label for="nmosRdsToggle" class="toggle-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                    </svg>
+                    NMOS RDS Discovery
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="nmosRdsToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="nmosRdsStatus" class="status-text">Disabled</span>
+                <button id="nmosRdsSettingsBtn" class="btn-icon" title="NMOS RDS Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.8 1.8 0 0 0 .34 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.8 1.8 0 0 0-1.98-.34 1.8 1.8 0 0 0-1.08 1.64V21a2 2 0 1 1-4 0v-.09a1.8 1.8 0 0 0-1.08-1.64 1.8 1.8 0 0 0-1.98.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.64-1.08H2a2 2 0 1 1 0-4h.96a1.8 1.8 0 0 0 1.64-1.08 1.8 1.8 0 0 0-.34-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.8 1.8 0 0 0 1.98.34H9a1.8 1.8 0 0 0 1.08-1.64V3a2 2 0 1 1 4 0v.09c0 .7.4 1.33 1.08 1.64.6.26 1.3.15 1.98-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.5.5-.6 1.2-.34 1.98.27.68.9 1.08 1.64 1.08H22a2 2 0 1 1 0 4h-.09c-.7 0-1.33.4-1.64 1.08z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- AES67/SAP Discovery Toggle -->
+            <div class="toggle-container">
+                <label for="aes67Toggle" class="toggle-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                    </svg>
+                    AES67/SAP Discovery
+                </label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="aes67Toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="aes67Status" class="status-text">Connected</span>
+                <button id="aes67SettingsBtn" class="btn-icon" title="AES67 Server Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.8 1.8 0 0 0 .34 1.98l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.8 1.8 0 0 0-1.98-.34 1.8 1.8 0 0 0-1.08 1.64V21a2 2 0 1 1-4 0v-.09a1.8 1.8 0 0 0-1.08-1.64 1.8 1.8 0 0 0-1.98.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.64-1.08H2a2 2 0 1 1 0-4h.96a1.8 1.8 0 0 0 1.64-1.08 1.8 1.8 0 0 0-.34-1.98l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.8 1.8 0 0 0 1.98.34H9a1.8 1.8 0 0 0 1.08-1.64V3a2 2 0 1 1 4 0v.09c0 .7.4 1.33 1.08 1.64.6.26 1.3.15 1.98-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.5.5-.6 1.2-.34 1.98.27.68.9 1.08 1.64 1.08H22a2 2 0 1 1 0 4h-.09c-.7 0-1.33.4-1.64 1.08z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         <!-- Node Selectors -->
         <div class="node-selectors">
@@ -178,20 +217,36 @@
     <div id="addNodeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add NMOS Node</h2>
+                <h2>Add Node</h2>
                 <button class="modal-close">&times;</button>
             </div>
             <form id="addNodeForm">
                 <div class="form-group">
+                    <label for="nodeProtocol">Protocol</label>
+                    <select id="nodeProtocol" name="nodeProtocol">
+                        <option value="nmos">NMOS (IS-04/IS-05)</option>
+                        <option value="aes67">AES67 (SAP/SDP)</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="nodeName">Node Name</label>
                     <input type="text" id="nodeName" name="nodeName" placeholder="Studio A Camera" required>
                 </div>
-                <div class="form-group">
+
+                <!-- NMOS-specific fields -->
+                <div class="form-group nmos-fields">
                     <label for="is04Url">IS-04 URL</label>
-                    <input type="url" id="is04Url" name="is04Url" placeholder="http://192.168.1.10:3000" required>
+                    <input type="url" id="is04Url" name="is04Url" placeholder="http://192.168.1.10:3000">
                     <small>Enter the NMOS IS-04 Node API URL. IS-05 will be auto-discovered.</small>
-                    <!-- <small class="port-helper">Don't know the port number? Try <a href="https://taqq505.github.io/nmos-port-explorer-gui/" target="_blank" rel="noopener">Port Explorer</a></small> -->
                 </div>
+
+                <!-- AES67-specific fields -->
+                <div class="form-group aes67-fields" style="display: none;">
+                    <label for="aes67ServerUrl">AES67 SAP Server URL</label>
+                    <input type="url" id="aes67ServerUrl" name="aes67ServerUrl" placeholder="http://localhost:8080">
+                    <small>Enter the AES67 SAP discovery server URL (Go backend).</small>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancelAddNode">Cancel</button>
                     <button type="submit" class="btn btn-primary">
@@ -204,66 +259,7 @@
             </form>
             <div id="addNodeProgress" class="progress-container" style="display: none;">
                 <div class="spinner"></div>
-                <p>Discovering NMOS node...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Connect RDS -->
-    <div id="connectRdsModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h2>Connect to NMOS Registry (RDS)</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <form id="connectRdsForm" style="display: block;">
-                <div class="form-group">
-                    <label for="rdsUrl">Registry Query API URL</label>
-                    <input type="url" id="rdsUrl" name="rdsUrl" placeholder="http://192.168.1.100:3001" required>
-                    <small>Enter the NMOS IS-04 Query API URL </small>
-                    <!-- <small class="port-helper">Don't know the port number? Try <a href="https://taqq505.github.io/nmos-port-explorer-gui/" target="_blank" rel="noopener">Port Explorer</a></small> -->
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelConnectRds">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 1v6m0 6v6"/>
-                        </svg>
-                        Discover Nodes
-                    </button>
-                </div>
-            </form>
-            <div id="rdsProgress" class="progress-container" style="display: none;">
-                <div class="spinner"></div>
-                <p>Discovering nodes from registry...</p>
-            </div>
-            <div id="rdsNodeList" class="rds-node-list" style="display: none;">
-                <div class="rds-header">
-                    <h3>Available Nodes</h3>
-                    <label class="select-all-label">
-                        <input type="checkbox" id="selectAllNodes" class="select-all-checkbox">
-                        <span>Select All</span>
-                    </label>
-                </div>
-                <div id="rdsNodes"></div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelRdsSelection">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="addSelectedNodes">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Add Selected Nodes
-                    </button>
-                </div>
-            </div>
-            <div id="rdsAddProgress" class="rds-add-progress" style="display: none;">
-                <h3>Adding Nodes...</h3>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="rdsProgressBar"></div>
-                </div>
-                <p id="rdsProgressText">Initializing...</p>
-                <div id="rdsProgressDetails" class="progress-details"></div>
+                <p id="addNodeProgressText">Discovering node...</p>
             </div>
         </div>
     </div>
@@ -278,7 +274,20 @@
             <div class="settings-content">
                 <!-- Tabs -->
                 <div class="settings-tabs">
-                    <button class="settings-tab active" data-tab="history">
+                    <button class="settings-tab active" data-tab="nmosrds">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                        </svg>
+                        NMOS RDS
+                    </button>
+                    <button class="settings-tab" data-tab="aes67">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                        </svg>
+                        AES67/SAP
+                    </button>
+                    <button class="settings-tab" data-tab="history">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12 6 12 12 16 14"/>
@@ -320,8 +329,138 @@
                     </button>
                 </div>
 
+                <!-- Tab Content: NMOS RDS -->
+                <div id="nmosrdsTab" class="settings-tab-content active">
+                    <div class="settings-section">
+                        <h3>NMOS Registry & Discovery System (RDS)</h3>
+                        <p class="settings-description">
+                            Configure the NMOS IS-04 Query API (Registry) to automatically discover all nodes on your network.
+                        </p>
+
+                        <div class="form-group">
+                            <label for="nmosRdsUrlSetting">Registry Query API URL</label>
+                            <input type="url" id="nmosRdsUrlSetting" placeholder="http://192.168.1.100:3001" class="form-input">
+                            <small>Example: http://registry.local:3001 or http://192.168.1.100:3001</small>
+                        </div>
+
+                        <div class="settings-actions">
+                            <button id="testNmosRdsConnectionBtn" class="btn btn-secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                                Test Connection
+                            </button>
+                            <button id="saveNmosRdsSettingsBtn" class="btn btn-primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Save Settings
+                            </button>
+                        </div>
+
+                        <div class="settings-status">
+                            <h4>Status</h4>
+                            <div class="status-grid">
+                                <div class="status-item">
+                                    <span class="status-label">Connection:</span>
+                                    <span id="nmosRdsConnectionStatus" class="status-value">Not configured</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Discovered Nodes:</span>
+                                    <span id="nmosRdsNodeCount" class="status-value">0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-info">
+                            <h4>Quick Setup</h4>
+                            <ol>
+                                <li>Ensure you have an NMOS Registry running on your network</li>
+                                <li>Enter the Query API URL above (typically port 3001)</li>
+                                <li>Click "Test Connection" to verify</li>
+                                <li>Click "Save Settings"</li>
+                                <li>Enable the "NMOS RDS Discovery" toggle on the main page</li>
+                                <li>Discovered nodes will automatically appear in the Add Node list</li>
+                            </ol>
+                        </div>
+
+                        <div class="settings-info" style="margin-top: 20px;">
+                            <h4>What is NMOS RDS?</h4>
+                            <p>
+                                The Registry & Discovery System (RDS) is a central NMOS registry that maintains a database of all
+                                NMOS-compliant devices on your network. When enabled, this allows automatic discovery of devices
+                                without manually adding each node's IS-04 URL.
+                            </p>
+                            <p style="margin-top: 10px;">
+                                <strong>Benefits:</strong> Automatic discovery, centralized management, zero manual configuration
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: AES67/SAP -->
+                <div id="aes67Tab" class="settings-tab-content">
+                    <div class="settings-section">
+                        <h3>AES67/SAP Discovery Server</h3>
+                        <p class="settings-description">
+                            Configure the central AES67 SAP discovery server URL. This server listens to SAP multicast announcements and provides discovered streams via REST API.
+                        </p>
+
+                        <div class="form-group">
+                            <label for="aes67ServerUrlSetting">Server URL</label>
+                            <input type="url" id="aes67ServerUrlSetting" placeholder="http://aes67-server.local:8080" class="form-input">
+                            <small>Default: http://localhost:8080</small>
+                        </div>
+
+                        <div class="server-status">
+                            <div class="status-item">
+                                <span class="status-label">Status:</span>
+                                <span id="aes67ServerStatus" class="status-value disconnected">Disconnected</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Active Streams:</span>
+                                <span id="aes67ActiveStreams" class="status-value">-</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Version:</span>
+                                <span id="aes67ServerVersion" class="status-value">-</span>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button id="testAes67ConnectionBtn" class="btn btn-secondary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 4 23 10 17 10"/>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                                </svg>
+                                Test Connection
+                            </button>
+                            <button id="saveAes67SettingsBtn" class="btn btn-primary">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                Save Settings
+                            </button>
+                        </div>
+
+                        <div class="settings-info">
+                            <h4>Quick Setup</h4>
+                            <ol>
+                                <li>Start the AES67 SAP discovery backend server</li>
+                                <li>Enter the server URL above (default: http://localhost:8080)</li>
+                                <li>Click "Test Connection" to verify</li>
+                                <li>Enable the toggle on the main page</li>
+                                <li>Discovered AES67 streams will appear automatically</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tab Content: History -->
-                <div id="historyTab" class="settings-tab-content active">
+                <div id="historyTab" class="settings-tab-content">
                     <div id="historyContent" class="history-list">
                         <div class="empty-state">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Changes Demo - AES67/NMOS Protocol Selector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .demo-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .feature-card .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status.complete { background: #10b981; color: white; }
+        .status.new { background: #f59e0b; color: white; }
+
+        /* Modal Demo */
+        .modal-demo {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+        .nmos-fields, .aes67-fields {
+            padding: 15px;
+            border-left: 3px solid #667eea;
+            background: white;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .aes67-fields {
+            border-left-color: #764ba2;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .badge.nmos {
+            background: #3b82f6;
+            color: white;
+        }
+        .badge.aes67 {
+            background: #8b5cf6;
+            color: white;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .comparison-item {
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .before {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+        .after {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+        .comparison-item h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .protocol-selector-demo {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✨ AES67/SAP Discovery - Frontend Implementation</h1>
+            <p class="subtitle">Dual-protocol support (NMOS + AES67) with seamless protocol switching</p>
+        </div>
+
+        <!-- Key Features -->
+        <div class="demo-section">
+            <h2>🎯 Key Features Implemented</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="status new">NEW</span>
+                    <h3>Protocol Selector</h3>
+                    <p>Add Node modal now includes a dropdown to choose between NMOS and AES67 protocols</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status new">NEW</span>
+                    <h3>Dynamic Form Fields</h3>
+                    <p>Form fields automatically show/hide based on selected protocol</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status new">NEW</span>
+                    <h3>Protocol Badges</h3>
+                    <p>Node dropdowns display protocol badges: 📡 NMOS, 🎙️ AES67</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">COMPLETE</span>
+                    <h3>Client Factory Pattern</h3>
+                    <p>Clean abstraction creates appropriate client based on protocol</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">COMPLETE</span>
+                    <h3>AES67 Client</h3>
+                    <p>Full implementation matching NMOSClient interface</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">COMPLETE</span>
+                    <h3>Backwards Compatible</h3>
+                    <p>Existing NMOS nodes automatically migrated with protocol='nmos'</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Add Node Modal Demo -->
+        <div class="demo-section">
+            <h2>📝 Add Node Modal - Interactive Demo</h2>
+            <p style="margin-bottom: 20px; color: #666;">This is how the updated modal looks. Try changing the protocol selector:</p>
+
+            <div class="modal-demo">
+                <div class="form-group">
+                    <label for="demoProtocol">Protocol <span class="highlight">NEW FIELD</span></label>
+                    <select id="demoProtocol" onchange="toggleFields(this.value)">
+                        <option value="nmos">NMOS (IS-04/IS-05)</option>
+                        <option value="aes67">AES67 (SAP/SDP)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="demoName">Node Name</label>
+                    <input type="text" id="demoName" placeholder="Studio A Camera" />
+                </div>
+
+                <!-- NMOS Fields -->
+                <div id="nmosFields" class="nmos-fields">
+                    <div class="form-group">
+                        <label for="demoIs04">IS-04 URL</label>
+                        <input type="url" id="demoIs04" placeholder="http://192.168.1.10:3000" />
+                        <small>Enter the NMOS IS-04 Node API URL. IS-05 will be auto-discovered.</small>
+                    </div>
+                </div>
+
+                <!-- AES67 Fields -->
+                <div id="aes67Fields" class="aes67-fields" style="display: none;">
+                    <div class="form-group">
+                        <label for="demoAes67">AES67 SAP Server URL <span class="highlight">NEW FIELD</span></label>
+                        <input type="url" id="demoAes67" placeholder="http://localhost:8080" />
+                        <small>Enter the AES67 SAP discovery server URL (Go backend).</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Before/After Comparison -->
+        <div class="demo-section">
+            <h2>🔄 Before vs After</h2>
+            <div class="comparison">
+                <div class="comparison-item before">
+                    <h4>❌ Before (NMOS Only)</h4>
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li>Single protocol support</li>
+                        <li>Hardcoded to NMOS</li>
+                        <li>No protocol field in storage</li>
+                        <li>Cannot add AES67 devices</li>
+                    </ul>
+                </div>
+                <div class="comparison-item after">
+                    <h4>✅ After (Dual Protocol)</h4>
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li>Both NMOS and AES67 support</li>
+                        <li>Protocol selector in UI</li>
+                        <li>Storage with protocol field</li>
+                        <li>Seamless protocol switching</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocol Badges Demo -->
+        <div class="demo-section">
+            <h2>🏷️ Protocol Badges in Node Dropdowns</h2>
+            <p style="margin-bottom: 15px; color: #666;">Node selectors now display protocol badges for easy identification:</p>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Sender Node:</label>
+                <select style="width: 100%; padding: 12px; font-size: 16px; border-radius: 6px; border: 2px solid #e0e0e0;">
+                    <option value="">Select sender node...</option>
+                    <option value="1">📡 Studio Camera A (http://192.168.1.10:3000)</option>
+                    <option value="2">📡 Audio Console (http://192.168.1.20:3000)</option>
+                    <option value="3">🎙️ Calrec Apollo Network (http://localhost:8080)</option>
+                    <option value="4">🎙️ AES67 Audio Streams (http://192.168.1.50:8080)</option>
+                </select>
+                <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                    📡 = NMOS Protocol &nbsp;&nbsp;|&nbsp;&nbsp; 🎙️ = AES67 Protocol
+                </p>
+            </div>
+        </div>
+
+        <!-- Code Changes -->
+        <div class="demo-section">
+            <h2>💻 Key Code Changes</h2>
+
+            <h3 style="margin-top: 20px; color: #667eea;">1. Protocol Selector (HTML)</h3>
+            <div class="code-block">
+&lt;div class="form-group"&gt;
+    &lt;label for="nodeProtocol"&gt;Protocol&lt;/label&gt;
+    &lt;select id="nodeProtocol" name="nodeProtocol"&gt;
+        &lt;option value="nmos"&gt;NMOS (IS-04/IS-05)&lt;/option&gt;
+        &lt;option value="aes67"&gt;AES67 (SAP/SDP)&lt;/option&gt;
+    &lt;/select&gt;
+&lt;/div&gt;
+            </div>
+
+            <h3 style="margin-top: 20px; color: #667eea;">2. Protocol Toggle Logic (JavaScript)</h3>
+            <div class="code-block">
+handleProtocolChange(protocol) {
+    if (protocol === 'nmos') {
+        // Show NMOS fields, hide AES67 fields
+        nmosFields.forEach(el => el.style.display = 'block');
+        aes67Fields.forEach(el => el.style.display = 'none');
+    } else if (protocol === 'aes67') {
+        // Show AES67 fields, hide NMOS fields
+        nmosFields.forEach(el => el.style.display = 'none');
+        aes67Fields.forEach(el => el.style.display = 'block');
+    }
+}
+            </div>
+
+            <h3 style="margin-top: 20px; color: #667eea;">3. Client Factory Usage</h3>
+            <div class="code-block">
+// Automatically creates the right client based on protocol
+const client = await ClientFactory.createClient(node);
+
+// Works for both NMOS and AES67:
+await client.initialize();
+const senders = await client.getSenders();
+const receivers = await client.getReceivers();
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="demo-section">
+            <h2>⚙️ How It Works</h2>
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <h4 style="color: #1e40af; margin-bottom: 10px;">User Flow:</h4>
+                <ol style="margin-left: 20px; line-height: 2; color: #1e3a8a;">
+                    <li>User clicks <strong>"Add Node"</strong> button</li>
+                    <li>Modal opens with <strong>Protocol selector</strong></li>
+                    <li>User selects either <strong>NMOS</strong> or <strong>AES67</strong></li>
+                    <li>Form fields <strong>dynamically update</strong> based on selection</li>
+                    <li>User enters protocol-specific details</li>
+                    <li><strong>ClientFactory</strong> creates appropriate client</li>
+                    <li>Node is saved with <strong>protocol field</strong></li>
+                    <li>Protocol badge appears in <strong>node dropdowns</strong></li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Testing Guide -->
+        <div class="demo-section">
+            <h2>🧪 How to Test</h2>
+            <div class="feature-grid">
+                <div style="grid-column: span 2;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">Step-by-Step Testing:</h3>
+                    <ol style="margin-left: 20px; line-height: 2;">
+                        <li><strong>Open the main application:</strong> <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">file:///home/tighmaceoghan/nmos-gui/index.html</code></li>
+                        <li><strong>Click "Add Node"</strong> button in the header</li>
+                        <li><strong>Select Protocol dropdown</strong> - notice it has two options</li>
+                        <li><strong>Switch between NMOS and AES67</strong> - watch form fields change</li>
+                        <li><strong>For NMOS:</strong> Enter IS-04 URL field (e.g., http://192.168.1.10:3000)</li>
+                        <li><strong>For AES67:</strong> Enter AES67 SAP Server URL (e.g., http://localhost:8080)</li>
+                        <li><strong>Submit the form</strong> - node will be saved with protocol</li>
+                        <li><strong>Check node dropdowns</strong> - protocol badge should appear (📡 or 🎙️)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Files Modified -->
+        <div class="demo-section">
+            <h2>📁 Files Modified</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="status new">MODIFIED</span>
+                    <h3>index.html</h3>
+                    <p>Added protocol selector and conditional form fields in Add Node modal</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status new">MODIFIED</span>
+                    <h3>app.js</h3>
+                    <p>Added handleProtocolChange() and updated handleAddNode() for dual-protocol support</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">READY</span>
+                    <h3>client-factory.js</h3>
+                    <p>Already implemented - creates NMOS or AES67 client based on protocol</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">READY</span>
+                    <h3>aes67-client.js</h3>
+                    <p>Already implemented - full AES67 client matching NMOS interface</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">READY</span>
+                    <h3>storage.js</h3>
+                    <p>Already has protocol field and migration logic</p>
+                </div>
+                <div class="feature-card">
+                    <span class="status complete">READY</span>
+                    <h3>sdp-parser.js</h3>
+                    <p>No changes needed - reused for both protocols</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 30px; color: white;">
+            <p style="font-size: 18px; margin-bottom: 10px;">✅ Frontend Implementation: <strong>100% Complete</strong></p>
+            <p style="font-size: 14px; opacity: 0.9;">Ready for integration with AES67 SAP backend server</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleFields(protocol) {
+            const nmosFields = document.getElementById('nmosFields');
+            const aes67Fields = document.getElementById('aes67Fields');
+
+            if (protocol === 'nmos') {
+                nmosFields.style.display = 'block';
+                aes67Fields.style.display = 'none';
+            } else if (protocol === 'aes67') {
+                nmosFields.style.display = 'none';
+                aes67Fields.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

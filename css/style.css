@@ -2331,3 +2331,103 @@ body {
         flex: 1;
     }
 }
+
+/* AES67/SAP Discovery Toggle */
+.discovery-controls {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 16px 32px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toggle-label svg {
+    color: var(--accent-primary);
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 3px;
+    background-color: var(--text-secondary);
+    transition: var(--transition);
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background: var(--accent-gradient);
+    border-color: transparent;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+    background-color: white;
+}
+
+input:disabled + .toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.status-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.status-text.connected {
+    color: var(--success);
+}
+
+.status-text.disconnected {
+    color: var(--error);
+}
+
+.status-text.connecting {
+    color: var(--warning);
+}

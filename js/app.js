@@ -1,10 +1,13 @@
 /**
- * ST2110 BCC - Main Application
- * Broadcast Control Center for NMOS patching
+ * NMOS and SAP Stream Manager
+ * Broadcast Control Center for NMOS and AES67/SAP patching
  */
 
 import { NMOSClient } from './nmos-api.js';
 import { StorageManager } from './storage.js';
+import { ClientFactory } from './client-factory.js';
+import { AES67Config } from './aes67-config.js';
+import { NMOSRDSConfig } from './nmosrds-config.js';
 
 class BCCApplication {
     constructor() {
@@ -16,6 +19,14 @@ class BCCApplication {
         this.selectedSender = null;
         this.selectedReceiver = null;
         this.discoveredNodes = []; // For RDS discovery
+
+        // NMOS RDS Discovery
+        this.nmosRdsEnabled = NMOSRDSConfig.isEnabled();
+        this.nmosRdsClient = null;
+
+        // AES67/SAP Discovery
+        this.aes67Client = null;
+        this.aes67Enabled = AES67Config.isEnabled();
 
         // Track which nodes have shown the enable/disable warning
         this.senderWarningShown = new Set();
@@ -30,6 +41,32 @@ class BCCApplication {
     async init() {
         this.setupEventListeners();
         this.loadNodes();
+
+        // Initialize NMOS RDS if enabled
+        if (this.nmosRdsEnabled) {
+            await this.initializeNMOSRDS();
+        } else {
+            this.updateNMOSRDSStatus('disabled');
+        }
+
+        // Initialize AES67 if enabled
+        if (this.aes67Enabled) {
+            await this.initializeAES67();
+        } else {
+            this.updateAES67Status('disabled');
+        }
+
+        // Set toggle states
+        const nmosRdsToggle = document.getElementById('nmosRdsToggle');
+        if (nmosRdsToggle) {
+            nmosRdsToggle.checked = this.nmosRdsEnabled;
+        }
+
+        const aes67Toggle = document.getElementById('aes67Toggle');
+        if (aes67Toggle) {
+            aes67Toggle.checked = this.aes67Enabled;
+        }
+
         this.showWelcomeIfNeeded();
         this.checkCookieConsent();
     }
@@ -38,10 +75,21 @@ class BCCApplication {
      * Setup all event listeners
      */
     setupEventListeners() {
-        // Connect RDS button
-        document.getElementById('connectRdsBtn').addEventListener('click', () => {
-            this.openConnectRdsModal();
-        });
+        // NMOS RDS Discovery Toggle
+        const nmosRdsToggle = document.getElementById('nmosRdsToggle');
+        if (nmosRdsToggle) {
+            nmosRdsToggle.addEventListener('change', (e) => {
+                this.handleNMOSRDSToggle(e.target.checked);
+            });
+        }
+
+        // NMOS RDS Settings Button
+        const nmosRdsSettingsBtn = document.getElementById('nmosRdsSettingsBtn');
+        if (nmosRdsSettingsBtn) {
+            nmosRdsSettingsBtn.addEventListener('click', () => {
+                this.openSettingsModal('nmosrds');
+            });
+        }
 
         // Add Node button
         document.getElementById('addNodeBtn').addEventListener('click', () => {
@@ -128,28 +176,61 @@ class BCCApplication {
             this.closeAddNodeModal();
         });
 
-        // Connect RDS Modal
-        document.getElementById('connectRdsForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleConnectRds();
-        });
+        // Protocol selector toggle
+        const protocolSelector = document.getElementById('nodeProtocol');
+        if (protocolSelector) {
+            protocolSelector.addEventListener('change', (e) => {
+                this.handleProtocolChange(e.target.value);
+            });
+        }
 
-        document.getElementById('cancelConnectRds').addEventListener('click', () => {
-            this.closeConnectRdsModal();
-        });
+        // AES67/SAP Discovery Toggle
+        const aes67Toggle = document.getElementById('aes67Toggle');
+        if (aes67Toggle) {
+            aes67Toggle.addEventListener('change', (e) => {
+                this.handleAES67Toggle(e.target.checked);
+            });
+        }
 
-        document.getElementById('cancelRdsSelection').addEventListener('click', () => {
-            this.closeConnectRdsModal();
-        });
+        // NMOS RDS Settings - Test Connection
+        const testNmosRdsBtn = document.getElementById('testNmosRdsConnectionBtn');
+        if (testNmosRdsBtn) {
+            testNmosRdsBtn.addEventListener('click', () => {
+                this.testNMOSRDSConnection();
+            });
+        }
 
-        document.getElementById('addSelectedNodes').addEventListener('click', () => {
-            this.handleAddSelectedNodes();
-        });
+        // NMOS RDS Settings - Save
+        const saveNmosRdsBtn = document.getElementById('saveNmosRdsSettingsBtn');
+        if (saveNmosRdsBtn) {
+            saveNmosRdsBtn.addEventListener('click', () => {
+                this.saveNMOSRDSSettings();
+            });
+        }
 
-        // Select all nodes checkbox
-        document.getElementById('selectAllNodes').addEventListener('change', (e) => {
-            this.handleSelectAllNodes(e.target.checked);
-        });
+        // AES67 Settings Button
+        const aes67SettingsBtn = document.getElementById('aes67SettingsBtn');
+        if (aes67SettingsBtn) {
+            aes67SettingsBtn.addEventListener('click', () => {
+                this.openSettingsModal('aes67');
+            });
+        }
+
+        // AES67 Settings - Test Connection
+        const testAes67Btn = document.getElementById('testAes67ConnectionBtn');
+        if (testAes67Btn) {
+            testAes67Btn.addEventListener('click', () => {
+                this.testAES67Connection();
+            });
+        }
+
+        // AES67 Settings - Save
+        const saveAes67Btn = document.getElementById('saveAes67SettingsBtn');
+        if (saveAes67Btn) {
+            saveAes67Btn.addEventListener('click', () => {
+                this.saveAES67Settings();
+            });
+        }
 
         // Settings tabs
         document.querySelectorAll('.settings-tab').forEach(tab => {
@@ -273,14 +354,18 @@ class BCCApplication {
 
         // Populate both selects with same nodes
         nodes.forEach(node => {
+            const protocol = node.protocol || 'nmos';
+            const badge = ClientFactory.getBadge(protocol);
+            const url = node.is04_url || node.aes67_server_url || node.sap_server_url || '';
+
             const senderOption = document.createElement('option');
             senderOption.value = node.id;
-            senderOption.textContent = `${node.name} (${node.is04_url})`;
+            senderOption.textContent = `${badge} ${node.name} (${url})`;
             senderSelect.appendChild(senderOption);
 
             const receiverOption = document.createElement('option');
             receiverOption.value = node.id;
-            receiverOption.textContent = `${node.name} (${node.is04_url})`;
+            receiverOption.textContent = `${badge} ${node.name} (${url})`;
             receiverSelect.appendChild(receiverOption);
         });
 
@@ -315,39 +400,59 @@ class BCCApplication {
         this.senderNode = node;
 
         try {
-            // Create NMOS client
-            this.senderClient = new NMOSClient(node.is04_url);
+            // Create client based on protocol (NMOS or AES67)
+            this.senderClient = await ClientFactory.createClient(node);
 
             // Show loading state
             this.setLoadingState(true, 'sender');
 
             // Initialize client (if not already initialized)
-            if (!node.version) {
-                await this.senderClient.initialize();
+            const protocol = node.protocol || 'nmos';
+            if (protocol === 'nmos') {
+                if (!node.version) {
+                    await this.senderClient.initialize();
 
-                // Update node with discovered info
-                this.storage.updateNode(nodeId, {
-                    is05_url: this.senderClient.is05BaseUrl,
-                    version: this.senderClient.version,
-                    is05_version: this.senderClient.is05Version
-                });
+                    // Update node with discovered info
+                    this.storage.updateNode(nodeId, {
+                        is05_url: this.senderClient.is05BaseUrl,
+                        version: this.senderClient.version,
+                        is05_version: this.senderClient.is05Version
+                    });
+                } else {
+                    // Use cached info
+                    this.senderClient.version = node.version;
+                    this.senderClient.is05BaseUrl = node.is05_url;
+                    this.senderClient.is05Version = node.is05_version;
+                }
             } else {
-                // Use cached info
-                this.senderClient.version = node.version;
-                this.senderClient.is05BaseUrl = node.is05_url;
-                this.senderClient.is05Version = node.is05_version;
+                // AES67 - always initialize
+                await this.senderClient.initialize();
             }
 
-            // Load senders
-            const senders = await this.senderClient.getSenders();
+            // Load senders from selected node
+            let senders = await this.senderClient.getSenders();
+
+            // If AES67 is enabled, merge AES67 streams from global discovery
+            if (this.aes67Enabled && this.aes67Client && protocol === 'nmos') {
+                try {
+                    const aes67Senders = await this.aes67Client.getSenders();
+                    senders = [...senders, ...aes67Senders];
+                } catch (error) {
+                    console.error('Failed to get AES67 senders:', error);
+                }
+            }
+
             this.storage.updateNode(nodeId, { senders });
             this.senderNode.senders = senders;
             this.renderSenders(senders);
 
-            // Fetch active connections for all senders
-            await this.refreshSenderConnections();
+            // Fetch active connections for all senders (protocol-specific)
+            if (protocol === 'nmos') {
+                await this.refreshSenderConnections();
+            }
 
-            this.showToast(`Sender node connected: ${node.name}`, 'success');
+            const protocolName = ClientFactory.getDisplayName(protocol);
+            this.showToast(`${protocolName} sender node connected: ${node.name}`, 'success');
 
         } catch (error) {
             console.error('Failed to select sender node:', error);
@@ -380,27 +485,33 @@ class BCCApplication {
         this.receiverNode = node;
 
         try {
-            // Create NMOS client
-            this.receiverClient = new NMOSClient(node.is04_url);
+            // Create client based on protocol (NMOS or AES67)
+            this.receiverClient = await ClientFactory.createClient(node);
 
             // Show loading state
             this.setLoadingState(true, 'receiver');
 
             // Initialize client (if not already initialized)
-            if (!node.version) {
-                await this.receiverClient.initialize();
+            const protocol = node.protocol || 'nmos';
+            if (protocol === 'nmos') {
+                if (!node.version) {
+                    await this.receiverClient.initialize();
 
-                // Update node with discovered info
-                this.storage.updateNode(nodeId, {
-                    is05_url: this.receiverClient.is05BaseUrl,
-                    version: this.receiverClient.version,
-                    is05_version: this.receiverClient.is05Version
-                });
+                    // Update node with discovered info
+                    this.storage.updateNode(nodeId, {
+                        is05_url: this.receiverClient.is05BaseUrl,
+                        version: this.receiverClient.version,
+                        is05_version: this.receiverClient.is05Version
+                    });
+                } else {
+                    // Use cached info
+                    this.receiverClient.version = node.version;
+                    this.receiverClient.is05BaseUrl = node.is05_url;
+                    this.receiverClient.is05Version = node.is05_version;
+                }
             } else {
-                // Use cached info
-                this.receiverClient.version = node.version;
-                this.receiverClient.is05BaseUrl = node.is05_url;
-                this.receiverClient.is05Version = node.is05_version;
+                // AES67 - always initialize
+                await this.receiverClient.initialize();
             }
 
             // Load receivers
@@ -409,10 +520,13 @@ class BCCApplication {
             this.receiverNode.receivers = receivers;
             this.renderReceivers(receivers);
 
-            // Fetch active connections for all receivers
-            await this.refreshReceiverConnections();
+            // Fetch active connections for all receivers (protocol-specific)
+            if (protocol === 'nmos') {
+                await this.refreshReceiverConnections();
+            }
 
-            this.showToast(`Receiver node connected: ${node.name}`, 'success');
+            const protocolName = ClientFactory.getDisplayName(protocol);
+            this.showToast(`${protocolName} receiver node connected: ${node.name}`, 'success');
 
         } catch (error) {
             console.error('Failed to select receiver node:', error);
@@ -1378,22 +1492,399 @@ class BCCApplication {
     }
 
     /**
-     * Handle add node form submission
+     * Handle protocol change in Add Node modal
+     */
+    handleProtocolChange(protocol) {
+        const nmosFields = document.querySelectorAll('.nmos-fields');
+        const aes67Fields = document.querySelectorAll('.aes67-fields');
+        const is04Input = document.getElementById('is04Url');
+        const aes67Input = document.getElementById('aes67ServerUrl');
+
+        if (protocol === 'nmos') {
+            nmosFields.forEach(el => el.style.display = 'block');
+            aes67Fields.forEach(el => el.style.display = 'none');
+            is04Input.required = true;
+            aes67Input.required = false;
+        } else if (protocol === 'aes67') {
+            nmosFields.forEach(el => el.style.display = 'none');
+            aes67Fields.forEach(el => el.style.display = 'block');
+            is04Input.required = false;
+            aes67Input.required = true;
+        }
+    }
+
+    /**
+     * Initialize NMOS RDS Discovery
+     */
+    async initializeNMOSRDS() {
+        try {
+            const registryUrl = NMOSRDSConfig.getRegistryUrl();
+
+            if (!registryUrl) {
+                throw new Error('Registry URL not configured');
+            }
+
+            console.log(`Initializing NMOS RDS with registry: ${registryUrl}`);
+            this.updateNMOSRDSStatus('connecting');
+
+            // Discover nodes from registry
+            const discoveredNodes = await NMOSClient.discoverFromRDS(registryUrl);
+
+            console.log(`✅ NMOS RDS Discovery: Found ${discoveredNodes.length} nodes`);
+            this.updateNMOSRDSStatus('connected');
+
+            // Update node count in settings
+            const nodeCountEl = document.getElementById('nmosRdsNodeCount');
+            if (nodeCountEl) {
+                nodeCountEl.textContent = discoveredNodes.length.toString();
+            }
+
+            // Auto-add discovered nodes (or store for user selection)
+            // For now, we'll just log them - you can enhance this to auto-add
+            this.discoveredNodes = discoveredNodes;
+
+            this.showToast(`✅ Discovered ${discoveredNodes.length} NMOS nodes`, 'success');
+            this.updateNMOSRDSSettingsUI();
+        } catch (error) {
+            console.error('Failed to initialize NMOS RDS:', error);
+            this.updateNMOSRDSStatus('disconnected');
+            this.showToast(`NMOS RDS connection failed: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Handle NMOS RDS toggle ON/OFF
+     */
+    async handleNMOSRDSToggle(enabled) {
+        this.nmosRdsEnabled = enabled;
+        NMOSRDSConfig.setEnabled(enabled);
+
+        if (enabled) {
+            await this.initializeNMOSRDS();
+        } else {
+            this.nmosRdsClient = null;
+            this.discoveredNodes = [];
+            this.updateNMOSRDSStatus('disabled');
+
+            // Update node count
+            const nodeCountEl = document.getElementById('nmosRdsNodeCount');
+            if (nodeCountEl) {
+                nodeCountEl.textContent = '0';
+            }
+        }
+    }
+
+    /**
+     * Update NMOS RDS status display
+     */
+    updateNMOSRDSStatus(status) {
+        const statusText = document.getElementById('nmosRdsStatus');
+        if (!statusText) return;
+
+        switch (status) {
+            case 'connected':
+                statusText.textContent = 'Connected';
+                statusText.className = 'status-text connected';
+                break;
+            case 'disconnected':
+                statusText.textContent = 'Disconnected';
+                statusText.className = 'status-text disconnected';
+                break;
+            case 'connecting':
+                statusText.textContent = 'Discovering...';
+                statusText.className = 'status-text connecting';
+                break;
+            case 'disabled':
+                statusText.textContent = 'Disabled';
+                statusText.className = 'status-text disconnected';
+                break;
+        }
+    }
+
+    /**
+     * Test NMOS RDS connection
+     */
+    async testNMOSRDSConnection() {
+        const urlInput = document.getElementById('nmosRdsUrlSetting');
+        const testUrl = urlInput.value.trim();
+
+        if (!testUrl) {
+            this.showToast('❌ Please enter a registry URL', 'error');
+            return;
+        }
+
+        try {
+            // Update status to connecting
+            const statusEl = document.getElementById('nmosRdsConnectionStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Testing...';
+                statusEl.className = 'status-value connecting';
+            }
+
+            // Test discovery
+            const discoveredNodes = await NMOSClient.discoverFromRDS(testUrl);
+
+            // Update status UI
+            if (statusEl) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-value connected';
+            }
+
+            const nodeCountEl = document.getElementById('nmosRdsNodeCount');
+            if (nodeCountEl) {
+                nodeCountEl.textContent = discoveredNodes.length.toString();
+            }
+
+            this.showToast(`✅ Connection successful! Found ${discoveredNodes.length} nodes`, 'success');
+        } catch (error) {
+            const statusEl = document.getElementById('nmosRdsConnectionStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Failed';
+                statusEl.className = 'status-value disconnected';
+            }
+
+            this.showToast(`❌ Connection failed: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Save NMOS RDS settings
+     */
+    async saveNMOSRDSSettings() {
+        const urlInput = document.getElementById('nmosRdsUrlSetting');
+        const newUrl = urlInput.value.trim();
+
+        if (!newUrl) {
+            this.showToast('❌ Please enter a registry URL', 'error');
+            return;
+        }
+
+        // Save to config
+        NMOSRDSConfig.setRegistryUrl(newUrl);
+
+        // Reinitialize if enabled
+        if (this.nmosRdsEnabled) {
+            await this.initializeNMOSRDS();
+        }
+
+        this.showToast('✅ Settings saved!', 'success');
+    }
+
+    /**
+     * Update NMOS RDS settings UI
+     */
+    updateNMOSRDSSettingsUI() {
+        const urlInput = document.getElementById('nmosRdsUrlSetting');
+        if (urlInput && !urlInput.value) {
+            urlInput.value = NMOSRDSConfig.getRegistryUrl();
+        }
+
+        // Update status if nodes discovered
+        if (this.discoveredNodes && this.discoveredNodes.length > 0) {
+            const statusEl = document.getElementById('nmosRdsConnectionStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-value connected';
+            }
+
+            const nodeCountEl = document.getElementById('nmosRdsNodeCount');
+            if (nodeCountEl) {
+                nodeCountEl.textContent = this.discoveredNodes.length.toString();
+            }
+        }
+    }
+
+    /**
+     * Initialize AES67/SAP Discovery
+     */
+    async initializeAES67() {
+        try {
+            const serverUrl = AES67Config.getServerUrl();
+            console.log(`Initializing AES67 client with server: ${serverUrl}`);
+
+            this.updateAES67Status('connecting');
+
+            const { AES67Client } = await import('./aes67-client.js');
+            this.aes67Client = new AES67Client(serverUrl);
+            await this.aes67Client.initialize();
+
+            this.updateAES67Status('connected');
+            console.log('✅ AES67 Discovery initialized');
+
+            // Update settings UI if visible
+            this.updateAES67SettingsUI();
+        } catch (error) {
+            console.error('Failed to initialize AES67:', error);
+            this.updateAES67Status('disconnected');
+            this.showToast(`AES67 connection failed: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Handle AES67 toggle ON/OFF
+     */
+    async handleAES67Toggle(enabled) {
+        this.aes67Enabled = enabled;
+        AES67Config.setEnabled(enabled);
+
+        if (enabled) {
+            await this.initializeAES67();
+
+            // Refresh current nodes to show AES67 streams
+            if (this.senderNode) {
+                await this.refreshSenderNode();
+            }
+            if (this.receiverNode) {
+                await this.refreshReceiverNode();
+            }
+        } else {
+            this.aes67Client = null;
+            this.updateAES67Status('disabled');
+
+            // Refresh to remove AES67 streams
+            if (this.senderNode) {
+                await this.refreshSenderNode();
+            }
+            if (this.receiverNode) {
+                await this.refreshReceiverNode();
+            }
+        }
+    }
+
+    /**
+     * Update AES67 status display
+     */
+    updateAES67Status(status) {
+        const statusText = document.getElementById('aes67Status');
+        if (!statusText) return;
+
+        switch (status) {
+            case 'connected':
+                statusText.textContent = 'Connected';
+                statusText.className = 'status-text connected';
+                break;
+            case 'disconnected':
+                statusText.textContent = 'Disconnected';
+                statusText.className = 'status-text disconnected';
+                break;
+            case 'connecting':
+                statusText.textContent = 'Connecting...';
+                statusText.className = 'status-text connecting';
+                break;
+            case 'disabled':
+                statusText.textContent = 'Disabled';
+                statusText.className = 'status-text disconnected';
+                break;
+        }
+    }
+
+    /**
+     * Test AES67 connection
+     */
+    async testAES67Connection() {
+        const urlInput = document.getElementById('aes67ServerUrlSetting');
+        const testUrl = urlInput.value.trim() || AES67Config.DEFAULT_SERVER_URL;
+
+        try {
+            const { AES67Client } = await import('./aes67-client.js');
+            const testClient = new AES67Client(testUrl);
+            await testClient.initialize();
+
+            // Update status UI
+            const statusEl = document.getElementById('aes67ServerStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-value connected';
+            }
+
+            this.showToast('✅ Connection successful!', 'success');
+        } catch (error) {
+            const statusEl = document.getElementById('aes67ServerStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Failed';
+                statusEl.className = 'status-value disconnected';
+            }
+
+            this.showToast(`❌ Connection failed: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Save AES67 settings
+     */
+    async saveAES67Settings() {
+        const urlInput = document.getElementById('aes67ServerUrlSetting');
+        const newUrl = urlInput.value.trim() || AES67Config.DEFAULT_SERVER_URL;
+
+        // Save to config
+        AES67Config.setServerUrl(newUrl);
+
+        // Reinitialize if enabled
+        if (this.aes67Enabled) {
+            await this.initializeAES67();
+
+            // Refresh nodes
+            if (this.senderNode) {
+                await this.refreshSenderNode();
+            }
+            if (this.receiverNode) {
+                await this.refreshReceiverNode();
+            }
+        }
+
+        this.showToast('✅ Settings saved!', 'success');
+    }
+
+    /**
+     * Update AES67 settings UI
+     */
+    updateAES67SettingsUI() {
+        const urlInput = document.getElementById('aes67ServerUrlSetting');
+        if (urlInput && !urlInput.value) {
+            urlInput.value = AES67Config.getServerUrl();
+        }
+
+        // Update status if client is initialized
+        if (this.aes67Client) {
+            const statusEl = document.getElementById('aes67ServerStatus');
+            if (statusEl) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'status-value connected';
+            }
+        }
+    }
+
+    /**
+     * Handle add node form submission (supports NMOS and AES67)
      */
     async handleAddNode() {
         const form = document.getElementById('addNodeForm');
         const progress = document.getElementById('addNodeProgress');
         const formData = new FormData(form);
 
+        const protocol = formData.get('nodeProtocol') || 'nmos';
         const nodeName = formData.get('nodeName');
         const is04Url = formData.get('is04Url');
+        const aes67ServerUrl = formData.get('aes67ServerUrl');
 
         form.style.display = 'none';
         progress.style.display = 'flex';
 
         try {
-            // Create and initialize client
-            const client = new NMOSClient(is04Url);
+            // Create node config based on protocol
+            const nodeConfig = {
+                name: nodeName,
+                protocol: protocol
+            };
+
+            if (protocol === 'nmos') {
+                nodeConfig.is04_url = is04Url;
+            } else if (protocol === 'aes67') {
+                nodeConfig.aes67_server_url = aes67ServerUrl;
+            }
+
+            // Create and initialize client using factory
+            const client = await ClientFactory.createClient(nodeConfig);
             await client.initialize();
 
             // Load devices
@@ -1402,22 +1893,33 @@ class BCCApplication {
                 client.getReceivers()
             ]);
 
-            // Save node
-            const node = this.storage.addNode({
+            // Prepare node data for storage (protocol-specific)
+            const nodeData = {
                 name: nodeName,
-                is04_url: is04Url,
-                is05_url: client.is05BaseUrl,
-                version: client.version,
-                is05_version: client.is05Version,
+                protocol: protocol,
                 senders,
                 receivers
-            });
+            };
+
+            // Add protocol-specific fields
+            if (protocol === 'nmos') {
+                nodeData.is04_url = is04Url;
+                nodeData.is05_url = client.is05BaseUrl;
+                nodeData.version = client.version;
+                nodeData.is05_version = client.is05Version;
+            } else if (protocol === 'aes67') {
+                nodeData.aes67_server_url = aes67ServerUrl;
+                nodeData.version = client.version;
+            }
+
+            // Save node
+            const node = this.storage.addNode(nodeData);
 
             // Reload nodes
             this.loadNodes();
 
             this.closeAddNodeModal();
-            this.showToast(`Node "${nodeName}" added successfully`, 'success');
+            this.showToast(`Node "${nodeName}" added successfully (${protocol.toUpperCase()})`, 'success');
 
         } catch (error) {
             console.error('Failed to add node:', error);
@@ -1432,12 +1934,16 @@ class BCCApplication {
     /**
      * Open settings modal
      */
-    openSettingsModal(tabName = 'history') {
+    openSettingsModal(tabName = 'nmosrds') {
         const modal = document.getElementById('settingsModal');
 
         this.switchSettingsTab(tabName);
         if (tabName === 'history') {
             this.loadHistory();
+        } else if (tabName === 'nmosrds') {
+            this.updateNMOSRDSSettingsUI();
+        } else if (tabName === 'aes67') {
+            this.updateAES67SettingsUI();
         }
 
         modal.classList.add('active');
@@ -1457,8 +1963,10 @@ class BCCApplication {
             content.classList.toggle('active', content.id === `${tabName}Tab`);
         });
 
-        // Load history when switching to history tab
-        if (tabName === 'history') {
+        // Load content when switching tabs
+        if (tabName === 'nmosrds') {
+            this.updateNMOSRDSSettingsUI();
+        } else if (tabName === 'history') {
             this.loadHistory();
         }
     }

@@ -12,6 +12,7 @@ export class StorageManager {
     constructor() {
         this.nodes = this.loadNodes();
         this.history = this.loadHistory();
+        this.migrateNodes(); // Migrate existing nodes to add protocol field
     }
 
     // ===== NODES =====
@@ -47,10 +48,18 @@ export class StorageManager {
         const nodeData = {
             id: this.generateId(),
             name: node.name,
-            is04_url: node.is04_url,
-            is05_url: node.is05_url,
-            version: node.version,
-            is05_version: node.is05_version,
+            protocol: node.protocol || 'nmos', // Default to NMOS for backwards compatibility
+
+            // NMOS-specific fields
+            is04_url: node.is04_url || null,
+            is05_url: node.is05_url || null,
+            version: node.version || null,
+            is05_version: node.is05_version || null,
+
+            // AES67-specific fields
+            aes67_server_url: node.aes67_server_url || node.sap_server_url || null,
+
+            // Common fields
             senders: node.senders || [],
             receivers: node.receivers || [],
             patch_paths: node.patch_paths || {},
@@ -140,6 +149,41 @@ export class StorageManager {
         const node = this.getNode(nodeId);
         if (!node || !node.patch_paths) return null;
         return node.patch_paths[receiverId];
+    }
+
+    /**
+     * Migrate existing nodes to add protocol field
+     * Ensures backwards compatibility for nodes created before dual-protocol support
+     */
+    migrateNodes() {
+        let migrated = false;
+
+        this.nodes.forEach(node => {
+            // Add protocol field if missing (default to NMOS)
+            if (!node.protocol) {
+                node.protocol = 'nmos';
+                migrated = true;
+                console.log(`Migrated node "${node.name}" to protocol: nmos`);
+            }
+
+            // Ensure URL fields exist (set to null if missing)
+            if (node.protocol === 'nmos' && node.is04_url === undefined) {
+                node.is04_url = null;
+                migrated = true;
+            }
+
+            if ((node.protocol === 'aes67' || node.protocol === 'calrec') &&
+                node.aes67_server_url === undefined &&
+                node.sap_server_url === undefined) {
+                node.aes67_server_url = null;
+                migrated = true;
+            }
+        });
+
+        if (migrated) {
+            this.saveNodes();
+            console.log('✅ Node migration complete');
+        }
     }
 
     // ===== HISTORY =====
